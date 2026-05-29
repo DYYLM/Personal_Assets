@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAssetStore } from '@/store';
 import { AssetCategory, Asset, AssetStatus, CustomTab } from '@/types';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { X, Image as ImageIcon, Plus, Check } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { X, Image as ImageIcon, Plus, Check, ArrowLeft } from 'lucide-react';
+
+const DESIGN_WIDTH = 414; // 设计稿宽度（iPhone 12/13 宽度）
+const DESIGN_HEIGHT = 896; // 设计稿高度
 import Logo from '@/components/Logo';
 import ImageSelector from '@/components/ImageSelector';
 import { getDefaultDepreciationConfig, calculateDefaultSalvageValue } from '@/utils/depreciation';
@@ -12,6 +15,8 @@ export default function AssetForm() {
   const { category: routeCategory, id } = useParams<{ category?: AssetCategory; id?: string }>();
   const navigate = useNavigate();
   const { addAsset, updateAsset, assets, tabs, addTab } = useAssetStore();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
 
   const isEdit = !!id;
   const isAddFromCategory = !!routeCategory && !id;
@@ -36,6 +41,22 @@ export default function AssetForm() {
   const [showImageSelector, setShowImageSelector] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+
+  // 计算缩放比例
+  useEffect(() => {
+    const updateScale = () => {
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const scaleX = windowWidth / DESIGN_WIDTH;
+      const scaleY = windowHeight / DESIGN_HEIGHT;
+      const newScale = Math.min(scaleX, scaleY, 1); // 最大缩放1倍，不放大
+      setScale(newScale);
+    };
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
 
   useEffect(() => {
     if (existingAsset) {
@@ -107,19 +128,50 @@ export default function AssetForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FDE9B1] to-white pb-8">
+    <div 
+      className="min-h-screen bg-gradient-to-b from-[#FDE9B1] to-white pb-24 flex items-start justify-center overflow-hidden"
+    >
+      <div
+        ref={containerRef}
+        className="w-full origin-top-center"
+        style={{
+          width: `${DESIGN_WIDTH}px`,
+          transform: `scale(${scale})`,
+          marginTop: '-17px',
+          marginBottom: '-17px'
+        }}
+      >
       {/* 顶部区域 */}
-      <div className="px-4 pt-8 pb-6">
-        <div className="flex items-center justify-between">
+      <div 
+        className="px-6 pt-8 pb-4"
+        style={{ marginTop: '-17px', marginBottom: '-17px' }}
+      >
+        <div 
+          className="flex items-center justify-between"
+          style={{ 
+            width: '366px',
+            marginTop: '-2px',
+            marginBottom: '-2px'
+          }}
+        >
           <Logo />
-          <Link to="/" className="p-2">
-            <X className="w-6 h-6 text-gray-600" />
-          </Link>
+          <button onClick={() => navigate(-1)} className="p-2">
+            <ArrowLeft className="w-6 h-6 text-gray-600" />
+          </button>
         </div>
       </div>
 
       {/* 主要内容区域 */}
-      <div className="bg-white rounded-t-[32px] px-6 pt-8 pb-8 min-h-[calc(100vh-120px)]">
+      <div 
+        className="bg-white rounded-t-[32px] px-6 pt-8 pb-8 min-h-[calc(100vh-120px)]"
+        style={{ 
+          width: '382px',
+          marginTop: '17px',
+          marginBottom: '17px',
+          marginLeft: '15px',
+          marginRight: '15px'
+        }}
+      >
         <h2 className="text-2xl font-bold text-gray-800 mb-6">
           {isEdit ? '编辑资产' : '添加资产'}
         </h2>
@@ -131,13 +183,13 @@ export default function AssetForm() {
             <button
               type="button"
               onClick={() => setShowImageSelector(true)}
-              className="w-40 h-40 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden hover:bg-gray-300 transition-colors relative group"
+              className="w-40 h-40 bg-white rounded-lg flex items-center justify-center overflow-hidden hover:bg-gray-100 transition-colors relative group"
             >
               {formData.imageUrl ? (
                 <img
                   src={formData.imageUrl}
                   alt={formData.name || '资产图片'}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
               ) : (
                 <div className="text-gray-400 flex flex-col items-center">
@@ -392,6 +444,7 @@ export default function AssetForm() {
         onSelect={handleImageSelect}
         currentImage={formData.imageUrl}
       />
+      </div>
     </div>
   );
 }

@@ -131,7 +131,7 @@ export default function ImageSelector({ isOpen, onClose, onSelect, currentImage 
                     <img 
                       src={image.url} 
                       alt={image.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                     {currentImage === image.url && (
                       <div className="absolute inset-0 bg-amber-500/20 flex items-center justify-center">
